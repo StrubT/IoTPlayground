@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Text;
-using Newtonsoft.Json;
 using Nmqtt;
 
-namespace StrubT.IoT.Playground {
+namespace StrubT.IoT.Playground.Mqtt {
 
-	abstract class PublishDataConverter<T> : IPublishDataConverter {
+	abstract class MqttConverter<T> : IPublishDataConverter {
 
 		public Func<T, byte[]> BinaryEncoder { get; }
 
 		public Func<byte[], T> BinaryDecoder { get; }
 
-		protected PublishDataConverter(Func<T, byte[]> encoder, Func<byte[], T> decoder) {
+		protected MqttConverter(Func<T, byte[]> encoder, Func<byte[], T> decoder) {
 
 			BinaryEncoder = encoder;
 			BinaryDecoder = decoder;
@@ -26,7 +25,7 @@ namespace StrubT.IoT.Playground {
 		object IPublishDataConverter.ConvertFromBytes(byte[] messageData) => BinaryDecode(messageData);
 	}
 
-	abstract class StringConverter<T> : PublishDataConverter<T> {
+	abstract class StringConverter<T> : MqttConverter<T> {
 
 		public static Encoding Encoding { get; } = Encoding.ASCII;
 
@@ -54,24 +53,5 @@ namespace StrubT.IoT.Playground {
 	class DoubleConverter : StringConverter<double> {
 
 		public DoubleConverter() : base(d => d.ToString(), s => double.Parse(s)) { }
-	}
-
-	struct SenseHatEnvironment {
-
-		[JsonProperty("temperature")]
-		public double Temperature { get; set; }
-
-		[JsonProperty("humidity")]
-		public double Humidity { get; set; }
-
-		[JsonProperty("pressure")]
-		public double Pressure { get; set; }
-
-		internal class Converter : StringConverter<SenseHatEnvironment> {
-
-			public Converter() : base(e => JsonConvert.SerializeObject(e), s => JsonConvert.DeserializeObject<SenseHatEnvironment>(s)) { }
-		}
-
-		public override string ToString() => $"{nameof(Temperature)}={Temperature:0.00}, {nameof(Humidity)}={Humidity:0.00}, {nameof(Pressure)}={Pressure:#,##0.00}";
 	}
 }

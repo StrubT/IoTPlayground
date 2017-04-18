@@ -8,6 +8,7 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Nmqtt;
+using StrubT.IoT.Playground.Mqtt;
 
 namespace StrubT.IoT.Playground {
 
