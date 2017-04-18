@@ -8,7 +8,6 @@ using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Nmqtt;
-using StrubT.IoT.Playground.Mqtt;
 
 namespace StrubT.IoT.Playground {
 
@@ -69,20 +68,20 @@ namespace StrubT.IoT.Playground {
 				client.MessageAvailable += (sender, e) => Console.WriteLine($"{topicNames[e.Topic.Split('/').Last()],-20}: {e.Message:#,##0.00}");
 
 				client.Connect();
-				client.Subscribe<SenseHatEnvironment.Converter>(combinedTopic, MqttQos.AtLeastOnce);
-				client.Subscribe<DoubleConverter>(temperatureTopic, MqttQos.AtLeastOnce);
-				client.Subscribe<DoubleConverter>(humidityTopic, MqttQos.AtLeastOnce);
-				client.Subscribe<DoubleConverter>(pressureTopic, MqttQos.AtLeastOnce);
+				client.Subscribe<SenseHatEnvironment.MqttConverter>(combinedTopic, MqttQos.AtLeastOnce);
+				client.Subscribe<Mqtt.DoubleConverter>(temperatureTopic, MqttQos.AtLeastOnce);
+				client.Subscribe<Mqtt.DoubleConverter>(humidityTopic, MqttQos.AtLeastOnce);
+				client.Subscribe<Mqtt.DoubleConverter>(pressureTopic, MqttQos.AtLeastOnce);
 
 				Console.ReadLine();
 
 				var r = new Random();
 				for (var i = 0; i < 5; i++) {
 					var data = new SenseHatEnvironment { Temperature = r.NextDouble() * 20 + 20, Humidity = r.NextDouble() * 20 + 20, Pressure = 1000 + (r.NextDouble() - 0.5) * 100 };
-					client.PublishMessage<SenseHatEnvironment.Converter>(combinedTopic, data);
-					client.PublishMessage<DoubleConverter>(temperatureTopic, data.Temperature);
-					client.PublishMessage<DoubleConverter>(humidityTopic, data.Humidity);
-					client.PublishMessage<DoubleConverter>(pressureTopic, data.Pressure);
+					client.PublishMessage<SenseHatEnvironment.MqttConverter>(combinedTopic, data);
+					client.PublishMessage<Mqtt.DoubleConverter>(temperatureTopic, data.Temperature);
+					client.PublishMessage<Mqtt.DoubleConverter>(humidityTopic, data.Humidity);
+					client.PublishMessage<Mqtt.DoubleConverter>(pressureTopic, data.Pressure);
 				}
 
 				Thread.Sleep(250);
@@ -166,7 +165,7 @@ namespace StrubT.IoT.Playground {
 			using (var client = new MqttClient("siot.net", clientId)) {
 				client.Connect();
 
-				client.PublishMessage<StringConverter>(messageTopic, msg);
+				client.PublishMessage<Mqtt.StringConverter>(messageTopic, msg);
 			}
 		}
 
@@ -191,7 +190,7 @@ namespace StrubT.IoT.Playground {
 				client.Connect();
 
 				var msg = rng.SelectMany(x => rng.SelectMany(y => new[] { x, y, leds[x, y].R, leds[x, y].G, leds[x, y].B })).ToList();
-				client.PublishMessage<StringConverter>(messageTopic, string.Join(",", msg));
+				client.PublishMessage<Mqtt.StringConverter>(messageTopic, string.Join(",", msg));
 			}
 		}
 
@@ -216,7 +215,7 @@ namespace StrubT.IoT.Playground {
 							var pxl = img.GetPixel(x, y);
 							return new[] { x, y, pxl.R, pxl.G, pxl.B };
 						})).ToList();
-						client.PublishMessage<StringConverter>(messageTopic, string.Join(",", msg));
+						client.PublishMessage<Mqtt.StringConverter>(messageTopic, string.Join(",", msg));
 
 						Thread.Sleep(1500);
 					}
@@ -251,7 +250,7 @@ namespace StrubT.IoT.Playground {
 							var pxl = img.GetPixel(borderX + X * (size + margin) + x, borderY + Y * (size + margin) + y);
 							return new[] { x, y, pxl.R, pxl.G, pxl.B };
 						})).ToList();
-						client.PublishMessage<StringConverter>(messageTopic, string.Join(",", msg));
+						client.PublishMessage<Mqtt.StringConverter>(messageTopic, string.Join(",", msg));
 
 						Thread.Sleep(250);
 					}

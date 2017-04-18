@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using StrubT.IoT.Playground.Mqtt;
 
 namespace StrubT.IoT.Playground {
 
@@ -14,9 +13,9 @@ namespace StrubT.IoT.Playground {
 		[JsonProperty("pressure")]
 		public double Pressure { get; set; }
 
-		internal class Converter : StringConverter<SenseHatEnvironment> {
+		internal class MqttConverter : Mqtt.StringConverter<SenseHatEnvironment> {
 
-			public Converter() : base(e => JsonConvert.SerializeObject(e), s => JsonConvert.DeserializeObject<SenseHatEnvironment>(s)) { }
+			public MqttConverter() : base(e => JsonConvert.SerializeObject(e), s => JsonConvert.DeserializeObject<SenseHatEnvironment>(s)) { }
 		}
 
 		public override string ToString() => $"{nameof(Temperature)}={Temperature:0.00}, {nameof(Humidity)}={Humidity:0.00}, {nameof(Pressure)}={Pressure:#,##0.00}";

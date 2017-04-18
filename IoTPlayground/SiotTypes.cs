@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using StrubT.IoT.Playground.Json;
 
 namespace StrubT.IoT.Playground {
 
@@ -67,7 +66,7 @@ namespace StrubT.IoT.Playground {
 		[JsonProperty("data")]
 		public T Data { get; set; }
 
-		[JsonProperty("time"), JsonConverter(typeof(SiotDateTimeConverter))]
+		[JsonProperty("time"), JsonConverter(typeof(Json.SiotDateTimeConverter))]
 		public DateTime DateTime { get; set; }
 	}
 }
