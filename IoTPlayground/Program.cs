@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Threading;
 using Nmqtt;
 
-namespace StrubT.IoT.Mqtt.Test {
+namespace StrubT.IoT.Playground {
 
 	static class Program {
 
@@ -136,20 +136,17 @@ namespace StrubT.IoT.Mqtt.Test {
 			using (var client = new MqttClient("siot.net", clientId)) {
 				client.Connect();
 
-				foreach (var fil in Directory.EnumerateFiles(@"D:\mse\IoT\24_mqtt\_icons"))
-					using (var tmp = Image.FromFile(fil))
-						if (tmp is Bitmap img && img.Width == 8 && img.Width == img.Height) {
+				foreach (var img in new[] { Properties.Resources.linkedin, Properties.Resources.twitter, Properties.Resources.facebook })
+					using (img) {
 
-							Console.WriteLine(Path.GetFileNameWithoutExtension(fil));
+						var msg = rng.SelectMany(x => rng.SelectMany(y => {
+							var pxl = img.GetPixel(x, y);
+							return new[] { x, y, pxl.R, pxl.G, pxl.B };
+						})).ToList();
+						client.PublishMessage<StringConverter>(messageTopic, string.Join(",", msg));
 
-							var msg = rng.SelectMany(x => rng.SelectMany(y => {
-								var pxl = img.GetPixel(x, y);
-								return new[] { x, y, pxl.R, pxl.G, pxl.B };
-							})).ToList();
-							client.PublishMessage<StringConverter>(messageTopic, string.Join(",", msg));
-
-							Thread.Sleep(1500);
-						}
+						Thread.Sleep(1500);
+					}
 			}
 		}
 
@@ -169,7 +166,7 @@ namespace StrubT.IoT.Mqtt.Test {
 			var margin = 10;
 			var size = 8;
 
-			using (var img = (Bitmap)Image.FromFile(@"D:\mse\IoT\24_mqtt\_icons\set.png"))
+			using (var img = Properties.Resources.set)
 			using (var client = new MqttClient("siot.net", clientId)) {
 				client.Connect();
 

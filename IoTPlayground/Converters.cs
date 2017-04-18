@@ -2,7 +2,7 @@
 using System.Text;
 using Nmqtt;
 
-namespace StrubT.IoT.Mqtt.Test {
+namespace StrubT.IoT.Playground {
 
 	abstract class PublishDataConverter<T> : IPublishDataConverter {
 

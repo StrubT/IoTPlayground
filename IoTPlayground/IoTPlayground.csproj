@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{35DCA9E1-4680-49F3-A5DA-911EEB7A1780}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>StrubT.IoT.Mqtt.Test</RootNamespace>
-    <AssemblyName>MqttTest</AssemblyName>
+    <RootNamespace>StrubT.IoT.Playground</RootNamespace>
+    <AssemblyName>IoTPlayground</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -53,13 +53,28 @@
     <Compile Include="Converters.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\facebook.png" />
+    <None Include="Resources\linkedin.png" />
+    <None Include="Resources\set.png" />
+    <None Include="Resources\twitter.png" />
     <Content Include="StrubT.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
