@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading;
+using Newtonsoft.Json;
 using Nmqtt;
 
 namespace StrubT.IoT.Playground {
@@ -40,7 +41,7 @@ namespace StrubT.IoT.Playground {
 		}
 
 		[Action]
-		static void SenseHatEnvironment() {
+		static void SenseHatEnvironmentMqtt() {
 
 			var clientId = "StrubT";
 
@@ -60,7 +61,7 @@ namespace StrubT.IoT.Playground {
 			var pressureTopic = $"siot/DAT/{centerGuid}/{pressureGuid}";
 
 			using (var client = new MqttClient("siot.net", clientId)) {
-				client.MessageAvailable += (sender, e) => Console.WriteLine($"{topicNames[e.Topic.Split('/').Last()],-20}: {e.Message:0.00}");
+				client.MessageAvailable += (sender, e) => Console.WriteLine($"{topicNames[e.Topic.Split('/').Last()],-20}: {e.Message:#,##0.00}");
 
 				client.Connect();
 				client.Subscribe<DoubleConverter>(temperatureTopic, MqttQos.AtLeastOnce);
@@ -74,6 +75,74 @@ namespace StrubT.IoT.Playground {
 					client.PublishMessage<DoubleConverter>(temperatureTopic, r.NextDouble() * 20 + 20);
 					client.PublishMessage<DoubleConverter>(humidityTopic, r.NextDouble() * 20 + 20);
 					client.PublishMessage<DoubleConverter>(pressureTopic, 1000 + (r.NextDouble() - 0.5) * 100);
+				}
+
+				Thread.Sleep(250);
+			}
+		}
+
+		[Action]
+		static void SenseHatEnvironmentRest() {
+
+			var centerGuid = "F386-09CA-1F9F-9A1F-BAD3-F573-64A0-2A22";
+			var temperatureGuid = "31B0E939B27C45229CB75A06B1E47919";
+			var humidityGuid = "EB5E6260F83E4118A919C226CAC1E82B";
+			var pressureGuid = "CF8EB59A961B4C58A075A822485708FB";
+
+			var historyCount = 25;
+
+			var centerUrl = $"http://url.siot.net/?licence={centerGuid}";
+			var temperatureManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={temperatureGuid}";
+			var temperatureConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={temperatureGuid}";
+			var temperatureDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={temperatureGuid}";
+			var temperatureDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={temperatureGuid}&count={historyCount}";
+			var humidityManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={humidityGuid}";
+			var humidityConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={humidityGuid}";
+			var humidityDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={humidityGuid}";
+			var humidityDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={humidityGuid}&count={historyCount}";
+			var pressureManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={pressureGuid}";
+			var pressureConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={pressureGuid}";
+			var pressureDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={pressureGuid}";
+			var pressureDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={pressureGuid}&count={historyCount}";
+
+			var dtBase = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+
+			using (var client = new WebClient()) {
+
+				var centerInfo = JsonConvert.DeserializeAnonymousType(client.DownloadString(centerUrl), new { licence = string.Empty, name = string.Empty, url = string.Empty, port = 0, webSocketPort = 0 });
+
+				Console.WriteLine($"[{centerInfo.licence}] '{centerInfo.name}'");
+				Console.WriteLine($"{centerInfo.url} (port: {centerInfo.port}, websocket: {centerInfo.webSocketPort})");
+
+				foreach (var sensor in new[] {
+					new { Name = "Temperature (°C)", Guid = temperatureGuid, ManifestUrl = temperatureManifestUrl, ConfigurationUrl = temperatureConfigurationUrl, DataUrl = temperatureDataUrl, DataHistoryUrl = temperatureDataHistoryUrl },
+					new { Name = "Humidity (% rel)", Guid = humidityGuid, ManifestUrl = humidityManifestUrl, ConfigurationUrl = humidityConfigurationUrl, DataUrl = humidityDataUrl, DataHistoryUrl = humidityDataHistoryUrl },
+					new { Name = "Pressure (mbar)", Guid = pressureGuid, ManifestUrl = pressureManifestUrl, ConfigurationUrl = pressureConfigurationUrl, DataUrl = pressureDataUrl, DataHistoryUrl = pressureDataHistoryUrl }
+				}) {
+
+					var sensorManifest = JsonConvert.DeserializeAnonymousType(
+						client.DownloadString(sensor.ManifestUrl),
+						new {
+							name = string.Empty,
+							type = string.Empty,
+							zone = new { name = string.Empty, guid = string.Empty },
+							description = string.Empty,
+							valueType = string.Empty/*,
+							jsonMapping = new object(),
+							file = new { name = string.Empty, type = string.Empty, size = 0L, date = 0L }*/
+						});
+					var sensorConfiguration = JsonConvert.DeserializeAnonymousType(client.DownloadString(sensor.ConfigurationUrl), new { storage = string.Empty });
+					var sensorData = JsonConvert.DeserializeAnonymousType(client.DownloadString(sensor.DataUrl), 0.0);
+					var sensorDataHistory = JsonConvert.DeserializeAnonymousType(client.DownloadString(sensor.DataHistoryUrl), new[] { new { data = 0.0, time = 0L } });
+
+					Console.WriteLine();
+					Console.WriteLine($"*** {sensor.Name} ***");
+					Console.WriteLine($"[{sensor.Guid}] '{sensorManifest.name}' ({sensorManifest.description})");
+					Console.WriteLine($"zone: [{sensorManifest.zone.guid}] '{sensorManifest.zone.name}'");
+					Console.WriteLine($"type: {sensorManifest.type}, value type: {sensorManifest.valueType}, storage: {sensorConfiguration.storage}");
+					Console.WriteLine($"latest data value: {sensorData:#,##0.00}");
+					foreach (var value in sensorDataHistory.Select((v, i) => new { Index = i, Data = v.data, DateTime = dtBase.AddMilliseconds(v.time).ToLocalTime() }))
+						Console.WriteLine($"{value.Index,2}: {value.Data,7:#,##0.00} ({value.DateTime})");
 				}
 			}
 		}
