@@ -97,48 +97,34 @@ namespace StrubT.IoT.Playground {
 			var humidityGuid = "EB5E6260F83E4118A919C226CAC1E82B";
 			var pressureGuid = "CF8EB59A961B4C58A075A822485708FB";
 
-			var historyCount = 25;
-
-			var centerUrl = $"http://url.siot.net/?licence={centerGuid}";
-			var combinedManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={combinedGuid}";
-			var combinedConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={combinedGuid}";
-			var combinedDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={combinedGuid}";
-			var combinedDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={combinedGuid}&count={historyCount}";
-			var temperatureManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={temperatureGuid}";
-			var temperatureConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={temperatureGuid}";
-			var temperatureDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={temperatureGuid}";
-			var temperatureDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={temperatureGuid}&count={historyCount}";
-			var humidityManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={humidityGuid}";
-			var humidityConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={humidityGuid}";
-			var humidityDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={humidityGuid}";
-			var humidityDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={humidityGuid}&count={historyCount}";
-			var pressureManifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={pressureGuid}";
-			var pressureConfigurationUrl = $"https://siot.net:11805/getconfig?sensorUID={pressureGuid}";
-			var pressureDataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={pressureGuid}";
-			var pressureDataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={pressureGuid}&count={historyCount}";
-
 			using (var client = new WebClient()) {
 
+				var centerUrl = $"http://url.siot.net/?licence={centerGuid}";
 				var centerInfo = JsonConvert.DeserializeObject<SiotCenter>(client.DownloadString(centerUrl));
 
 				Console.WriteLine($"[{centerInfo.Guid}] '{centerInfo.Name}'");
 				Console.WriteLine($"{centerInfo.Url} (port: {centerInfo.Port}, websocket: {centerInfo.WebSocketPort})");
 
-				PrintSensorInformation<SenseHatEnvironment>("Environment", combinedGuid, combinedManifestUrl, combinedConfigurationUrl, combinedDataUrl, combinedDataHistoryUrl);
-				PrintSensorInformation<double>("Temperature (°C)", temperatureGuid, temperatureManifestUrl, temperatureConfigurationUrl, temperatureDataUrl, temperatureDataHistoryUrl);
-				PrintSensorInformation<double>("Humidity (% rel)", humidityGuid, humidityManifestUrl, humidityConfigurationUrl, humidityDataUrl, humidityDataHistoryUrl);
-				PrintSensorInformation<double>("Pressure (mbar)", pressureGuid, pressureManifestUrl, pressureConfigurationUrl, pressureDataUrl, pressureDataHistoryUrl);
+				PrintSensorInformation<SenseHatEnvironment>("Environment", combinedGuid);
+				PrintSensorInformation<double>("Temperature (°C)", temperatureGuid);
+				PrintSensorInformation<double>("Humidity (% rel)", humidityGuid);
+				PrintSensorInformation<double>("Pressure (mbar)", pressureGuid);
 
-				void PrintSensorInformation<TValue>(string name, string guid, string manifestUrl, string configurationUrl, string dataUrl, string dataHistoryUrl)
+				void PrintSensorInformation<TValue>(string sensorName, string sensorGuid)
 				{
+					var manifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={sensorGuid}";
+					var configurationUrl = $"https://siot.net:11805/getconfig?sensorUID={sensorGuid}";
+					var dataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={sensorGuid}";
+					var dataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={sensorGuid}&count=15";
+
 					var sensorManifest = JsonConvert.DeserializeObject<SiotSensorActorManifest>(client.DownloadString(manifestUrl));
 					var sensorConfiguration = JsonConvert.DeserializeObject<SiotCenterConfiguration>(client.DownloadString(configurationUrl));
 					var sensorData = JsonConvert.DeserializeObject<TValue>(client.DownloadString(dataUrl));
 					var sensorDataHistory = JsonConvert.DeserializeObject<SiotHistoryValue<TValue>[]>(client.DownloadString(dataHistoryUrl));
 
 					Console.WriteLine();
-					Console.WriteLine($"*** {name} ***");
-					Console.WriteLine($"[{guid}] '{sensorManifest.Name}' ({sensorManifest.Description})");
+					Console.WriteLine($"*** {sensorName} ***");
+					Console.WriteLine($"[{sensorGuid}] '{sensorManifest.Name}' ({sensorManifest.Description})");
 					Console.WriteLine($"zone: [{sensorManifest.Zone.Guid}] '{sensorManifest.Zone.Name}'");
 					Console.WriteLine($"type: {sensorManifest.Type}, value type: {sensorManifest.ValueType}, storage: {sensorConfiguration.Storage}");
 					if (sensorManifest.JsonMapping is JObject j)
