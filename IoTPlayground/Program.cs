@@ -60,6 +60,10 @@ namespace StrubT.IoT.Playground {
 			};
 
 			var combinedTopic = $"siot/DAT/{centerGuid}/{combinedGuid}";
+			//var combinedTopicTrigger = $"siot/TRG/{centerGuid}/{combinedGuid}";
+			//var combinedTopicCommand = $"siot/CMD/{centerGuid}/{combinedGuid}";
+			//var combinedTopicStatus = $"siot/STA/{centerGuid}/{combinedGuid}";
+
 			var temperatureTopic = $"siot/DAT/{centerGuid}/{temperatureGuid}";
 			var humidityTopic = $"siot/DAT/{centerGuid}/{humidityGuid}";
 			var pressureTopic = $"siot/DAT/{centerGuid}/{pressureGuid}";
@@ -68,6 +72,7 @@ namespace StrubT.IoT.Playground {
 				client.MessageAvailable += (sender, e) => Console.WriteLine($"{topicNames[e.Topic.Split('/').Last()],-20}: {e.Message:#,##0.00}");
 
 				client.Connect();
+
 				client.Subscribe<SenseHatEnvironment.MqttConverter>(combinedTopic, MqttQos.AtLeastOnce);
 				client.Subscribe<Mqtt.DoubleConverter>(temperatureTopic, MqttQos.AtLeastOnce);
 				client.Subscribe<Mqtt.DoubleConverter>(humidityTopic, MqttQos.AtLeastOnce);
@@ -97,30 +102,44 @@ namespace StrubT.IoT.Playground {
 			var humidityGuid = "EB5E6260F83E4118A919C226CAC1E82B";
 			var pressureGuid = "CF8EB59A961B4C58A075A822485708FB";
 
+			//var monday = DateTime.Today.AddDays((DateTime.Today.DayOfWeek - DayOfWeek.Monday + 7) % 7);
+			//var lastMonday = monday.AddDays(-7);
+
 			using (var client = new WebClient()) {
 
 				var centerUrl = $"http://url.siot.net/?licence={centerGuid}";
+				var inputUrl = $"https://siot.net:11805/getinput?centerUID={centerGuid}";
+
 				var centerInfo = JsonConvert.DeserializeObject<SiotCenter>(client.DownloadString(centerUrl));
 
 				Console.WriteLine($"[{centerInfo.Guid}] '{centerInfo.Name}'");
 				Console.WriteLine($"{centerInfo.Url} (port: {centerInfo.Port}, websocket: {centerInfo.WebSocketPort})");
 
-				PrintSensorInformation<SenseHatEnvironment>("Environment", combinedGuid);
-				PrintSensorInformation<double>("Temperature (°C)", temperatureGuid);
-				PrintSensorInformation<double>("Humidity (% rel)", humidityGuid);
-				PrintSensorInformation<double>("Pressure (mbar)", pressureGuid);
+				var r = new Random();
+				var environmentData = Enumerable.Range(0, 5)
+					.Select(i => new SenseHatEnvironment { Temperature = r.NextDouble() * 20 + 20, Humidity = r.NextDouble() * 20 + 20, Pressure = 1000 + (r.NextDouble() - 0.5) * 100 })
+					.ToList();
 
-				void PrintSensorInformation<TValue>(string sensorName, string sensorGuid)
+				PrintSensorInformation<SenseHatEnvironment>("Environment", combinedGuid, environmentData);
+				PrintSensorInformation<double>("Temperature (°C)", temperatureGuid, environmentData.Select(d => d.Temperature));
+				PrintSensorInformation<double>("Humidity (% rel)", humidityGuid, environmentData.Select(d => d.Humidity));
+				PrintSensorInformation<double>("Pressure (mbar)", pressureGuid, environmentData.Select(d => d.Pressure));
+
+				void PrintSensorInformation<TValue>(string sensorName, string sensorGuid, IEnumerable<TValue> data)
 				{
 					var manifestUrl = $"https://siot.net:11805/getmanifest?sensorUID={sensorGuid}";
 					var configurationUrl = $"https://siot.net:11805/getconfig?sensorUID={sensorGuid}";
 					var dataUrl = $"https://siot.net:11805/getdata?centerUID={centerGuid}&sensorUID={sensorGuid}";
 					var dataHistoryUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={sensorGuid}&count=15";
+					//var dataHistoryFromUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={sensorGuid}&from={Json.SiotDateTimeConverter.Encode(monday)}";
+					//var dataHistoryFromToUrl = $"https://siot.net:11805/getdatalastn?centerUID={centerGuid}&sensorUID={sensorGuid}&from={Json.SiotDateTimeConverter.Encode(lastMonday)}&to={Json.SiotDateTimeConverter.Encode(monday)}";
 
 					var sensorManifest = JsonConvert.DeserializeObject<SiotSensorActorManifest>(client.DownloadString(manifestUrl));
 					var sensorConfiguration = JsonConvert.DeserializeObject<SiotCenterConfiguration>(client.DownloadString(configurationUrl));
 					var sensorData = JsonConvert.DeserializeObject<TValue>(client.DownloadString(dataUrl));
 					var sensorDataHistory = JsonConvert.DeserializeObject<SiotHistoryValue<TValue>[]>(client.DownloadString(dataHistoryUrl));
+					//var sensorDataFromHistory = JsonConvert.DeserializeObject<SiotHistoryValue<TValue>[]>(client.DownloadString(dataHistoryFromUrl));
+					//var sensorDataFromToHistory = JsonConvert.DeserializeObject<SiotHistoryValue<TValue>[]>(client.DownloadString(dataHistoryFromToUrl));
 
 					Console.WriteLine();
 					Console.WriteLine($"*** {sensorName} ***");
@@ -131,7 +150,21 @@ namespace StrubT.IoT.Playground {
 						Console.WriteLine($"JSON mapping: {string.Join(", ", j.Properties().Select(p => $"[{p.Value}] '{p.Name}'"))}");
 					Console.WriteLine($"latest data value: {sensorData:#,##0.00}");
 					foreach (var value in sensorDataHistory.Select((v, i) => (Index: i, Data: v.Data, DateTime: v.DateTime)))
-						Console.WriteLine($"{value.Index,2}: {value.Data,7:#,##0.00} ({value.DateTime})");
+						Console.WriteLine($"{value.Index,2}: {value.Data,8:#,##0.00} ({value.DateTime})");
+					//Console.WriteLine($"{sensorDataFromHistory.Length} data values recorded this week ({sensorDataFromHistory.First().DateTime:g} to {sensorDataFromHistory.Last().DateTime:g})");
+					//Console.WriteLine($"{sensorDataFromToHistory.Length} data values recorded last week ({sensorDataFromToHistory.First().DateTime:g} to {sensorDataFromToHistory.Last().DateTime:g})");
+
+					//var mqttGetUrl = $"https://siot.net:11805/get/{sensorGuid}";
+
+					//var mqttData = client.DownloadString(mqttGetUrl);
+					//Console.WriteLine(mqttData);
+
+					//foreach (var element in data) {
+					//	var mqttSetUrl = $"https://siot.net:11805/set/{sensorGuid}?value={element}";
+
+					//	var mqttResult = client.DownloadString(mqttSetUrl);
+					//	Console.WriteLine(mqttResult);
+					//}
 				}
 			}
 		}
