@@ -108,7 +108,7 @@ namespace StrubT.IoT.Playground {
 			using (var client = new WebClient()) {
 
 				var centerUrl = $"http://url.siot.net/?licence={centerGuid}";
-				var inputUrl = $"https://siot.net:11805/getinput?centerUID={centerGuid}";
+				//var inputUrl = $"https://siot.net:11805/getinput?centerUID={centerGuid}";
 
 				var centerInfo = JsonConvert.DeserializeObject<SiotCenter>(client.DownloadString(centerUrl));
 
