@@ -277,6 +277,33 @@ namespace StrubT.IoT.Playground {
 
 			Console.WriteLine();
 		}
+
+		[Action]
+		static void EncodeMorseCode() {
+
+			var codes = new int[,] {
+				/*A*/ { 1, 3, 0, 0 }, /*B*/ { 3, 1, 1, 1 }, /*C*/ { 3, 1, 3, 1 }, /*D*/ { 3, 1, 1, 0 }, /*E*/ { 1, 0, 0, 0 }, /*F*/ { 1, 1, 3, 1 }, /*G*/ { 3, 3, 1, 0 }, /*H*/ { 1, 1, 1, 1 },
+				/*I*/ { 1, 1, 0, 0 }, /*J*/ { 1, 3, 3, 3 }, /*K*/ { 3, 1, 3, 0 }, /*L*/ { 1, 3, 1, 1 }, /*M*/ { 3, 3, 0, 0 }, /*N*/ { 3, 1, 0, 0 }, /*O*/ { 3, 3, 3, 0 }, /*P*/ { 1, 3, 3, 1 },
+				/*Q*/ { 3, 3, 1, 3 }, /*R*/ { 1, 3, 1, 0 }, /*S*/ { 1, 1, 1, 0 }, /*T*/ { 3, 0, 0, 0 }, /*U*/ { 1, 1, 3, 0 }, /*V*/ { 1, 1, 1, 3 }, /*W*/ { 1, 3, 3, 0 }, /*X*/ { 3, 1, 1, 3 },
+				/*Y*/ { 3, 1, 3, 3 }, /*Z*/ { 3, 3, 1, 1 }
+			};
+
+			var encoded = new byte[codes.GetLength(0)];
+			for (var i = 0; i < codes.GetLength(0); i++) {
+				ref var e = ref encoded[i];
+				for (var j = 0; j < codes.GetLength(1); j++) {
+					if (j > 0) e <<= 2;
+					e |= (byte)codes[i, j];
+				}
+
+				var a = (e & 0b11000000) >> 6;
+				var b = (e & 0b00110000) >> 4;
+				var c = (e & 0b00001100) >> 2;
+				var d = e & 0b00000011;
+
+				Console.WriteLine($"{(char)('A' + i)}: 0x{e:X2} ({a}, {b}, {c}, {d})");
+			}
+		}
 	}
 
 	[AttributeUsage(AttributeTargets.Method)]

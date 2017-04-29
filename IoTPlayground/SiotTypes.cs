@@ -20,6 +20,8 @@ namespace StrubT.IoT.Playground {
 
 		[JsonProperty("webSocketPort")]
 		public string WebSocketPort { get; set; }
+
+		public override string ToString() => $"[{Guid}] '{Name}'";
 	}
 
 	class SiotSensorActorManifest {
@@ -44,6 +46,8 @@ namespace StrubT.IoT.Playground {
 
 		//[JsonProperty("file")]
 		//public SiotFileInformation FileInformation { get; set; } //new { name = string.Empty, type = string.Empty, size = 0L, date = 0L }
+
+		public override string ToString() => $"{Type} '{Name}' ({Description})";
 	}
 
 	class SiotZone {
@@ -53,6 +57,8 @@ namespace StrubT.IoT.Playground {
 
 		[JsonProperty("name")]
 		public string Name { get; set; }
+
+		public override string ToString() => $"[{Guid}] '{Name}'";
 	}
 
 	class SiotCenterConfiguration {
@@ -68,5 +74,7 @@ namespace StrubT.IoT.Playground {
 
 		[JsonProperty("time"), JsonConverter(typeof(Json.SiotDateTimeConverter))]
 		public DateTime DateTime { get; set; }
+
+		public override string ToString() => $"[{DateTime:g}] '{Data}'";
 	}
 }
